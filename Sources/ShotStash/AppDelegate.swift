@@ -7,6 +7,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     let store: CaptureStore
     private let captureService = CaptureService()
     private let hotkeys = HotkeyManager()
+    private let notifications = NotificationService()
     private var menuBar: MenuBarController!
 
     override init() {
@@ -40,11 +41,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         menuBar.onChangeDefaultFolder = { [weak self] in
             guard let self, let folder = chooseFolder() else { return }
             settings.defaultFolder = folder
+            notifications.updateSaveTitle(settings.defaultFolderName)
             menuBar.rebuild()
         }
         menuBar.onResetDefaultFolder = { [weak self] in
-            self?.settings.resetDefaultFolder()
-            self?.menuBar.rebuild()
+            guard let self else { return }
+            settings.resetDefaultFolder()
+            notifications.updateSaveTitle(settings.defaultFolderName)
+            menuBar.rebuild()
         }
         menuBar.launchAtLoginEnabled = { [weak self] in self?.launchAtLoginEnabled ?? false }
         menuBar.onToggleLaunchAtLogin = { [weak self] in self?.toggleLaunchAtLogin() }
@@ -54,6 +58,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         menuBar.fullScreenHotkeyAvailable = hotkeys.register(settings.hotkeyFullScreen) { [weak self] in
             self?.capture(mode: .fullScreen)
+        }
+
+        notifications.setup(saveTitle: settings.defaultFolderName)
+        notifications.onSaveRequested = { [weak self] id in
+            guard let self, let capture = store.capture(id: id) else { return }
+            save(capture, to: resolvedDefaultFolder())
         }
 
         store.onChange = { [weak self] in self?.menuBar.rebuild() }
@@ -73,6 +83,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             let size = CaptureService.pixelSize(of: url)
             let capture = store.add(fileURL: url, width: size.width, height: size.height)
             ClipboardService.copy(capture)
+            notifications.notify(capture)
         }
     }
 
@@ -89,6 +100,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             return folder
         }
         settings.resetDefaultFolder()
+        notifications.updateSaveTitle(settings.defaultFolderName)
         menuBar.rebuild()
         return settings.defaultFolder
     }
@@ -126,6 +138,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func saveToChosenFolder(_ capture: Capture) {
         guard let folder = chooseFolder() else { return }
         settings.defaultFolder = folder
+        notifications.updateSaveTitle(settings.defaultFolderName)
         menuBar.rebuild()
         save(capture, to: folder)
     }
