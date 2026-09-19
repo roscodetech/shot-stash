@@ -14,12 +14,12 @@ to the Desktop or any folder you choose.
 
 | Action | Default |
 |---|---|
-| Capture selection (Space toggles window mode, Esc cancels) | ⌥⇧⌘4 |
-| Capture full screen | ⌥⇧⌘3 |
+| Capture selection (Space toggles window mode, Esc cancels) | ⌃⌘4 |
+| Capture full screen | ⌃⌘3 |
 
-Change them by writing Carbon key codes and modifier bits to UserDefaults, e.g. ⌃⌥⌘4:
+Change them by writing Carbon key codes and modifier bits to UserDefaults, e.g. ⌥⇧⌘4:
 
-    defaults write com.roscodetech.shotstash hotkeySelection -data "$(printf '{"keyCode":21,"modifiers":6400}' | xxd -p | tr -d '\n')"
+    defaults write com.roscodetech.shotstash hotkeySelection -data "$(printf '{"keyCode":21,"modifiers":2816}' | xxd -p | tr -d '\n')"
 
 (modifiers: ⌘ 256, ⇧ 512, ⌥ 2048, ⌃ 4096; add them up). Relaunch afterwards.
 
@@ -54,9 +54,9 @@ macOS asks again after every `make install`.
 
 ## Manual test checklist
 
-1. ⌥⇧⌘4, select a region, paste into Preview (File › New from Clipboard).
-2. ⌥⇧⌘4 then Esc: no file appears in the caches folder.
-3. ⌥⇧⌘3: full screen on the clipboard.
+1. ⌃⌘4, select a region, paste into Preview (File › New from Clipboard).
+2. ⌃⌘4 then Esc: no file appears in the caches folder.
+3. ⌃⌘3: full screen on the clipboard.
 4. Save Last to Desktop twice: `Screenshot … .png` and `Screenshot … (2).png`.
 5. Save Last to Folder… → pick Downloads → menu titles switch to Downloads.
 6. Recent Captures shows thumbnails newest first; Delete and Clear All work.

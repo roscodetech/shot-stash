@@ -2,16 +2,16 @@ import XCTest
 @testable import ShotStashCore
 
 final class HotkeyTests: XCTestCase {
-    func testDefaultsUseOptionShiftCommandDigits() {
+    func testDefaultsUseControlCommandDigits() {
         XCTAssertEqual(Hotkey.defaultSelection.keyCode, 21)
         XCTAssertEqual(Hotkey.defaultFullScreen.keyCode, 20)
-        XCTAssertEqual(Hotkey.defaultSelection.modifiers, Hotkey.option | Hotkey.shift | Hotkey.cmd)
+        XCTAssertEqual(Hotkey.defaultSelection.modifiers, Hotkey.control | Hotkey.cmd)
     }
 
     func testDisplayStringOrdersModifiersLikeMacOS() {
-        XCTAssertEqual(Hotkey.defaultSelection.displayString, "⌥⇧⌘4")
-        let ctrl = Hotkey(keyCode: 20, modifiers: Hotkey.control | Hotkey.cmd)
-        XCTAssertEqual(ctrl.displayString, "⌃⌘3")
+        XCTAssertEqual(Hotkey.defaultSelection.displayString, "⌃⌘4")
+        let ctrl = Hotkey(keyCode: 20, modifiers: Hotkey.option | Hotkey.shift | Hotkey.cmd)
+        XCTAssertEqual(ctrl.displayString, "⌥⇧⌘3")
     }
 
     func testUnknownKeyCodeFallsBackToNumber() {

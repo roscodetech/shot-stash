@@ -32,7 +32,7 @@ Desktop unless asked.
 | Vehicle | Native Swift menu-bar app (AppKit), no third-party dependency |
 | Post-capture behaviour | Silent: clipboard + stash + notification. Save later from the menu bar |
 | History | Last 10 captures, kept as temp files, cleared on quit and on launch |
-| Default hotkeys | ⌥⇧⌘4 capture selection, ⌥⇧⌘3 capture full screen |
+| Default hotkeys | ⌃⌘4 capture selection, ⌃⌘3 capture full screen (changed from ⌥⇧⌘ on 2026-09-19: four keys felt excessive) |
 | Default save folder | `~/Desktop`, changeable via folder picker, remembered |
 | Notification | "Copied to clipboard — W×H" with a "Save to Desktop" action button |
 | Repo | `Utility/shot-stash`, own git repo, branches `dev`/`dev-stable`/`prod`/`prod-stable` |
@@ -101,8 +101,8 @@ in that folder are deleted (leftovers from a crash). On
 ### Menu
 
 ```
-Capture Selection            ⌥⇧⌘4
-Capture Full Screen          ⌥⇧⌘3
+Capture Selection            ⌃⌘4
+Capture Full Screen          ⌃⌘3
 ─────────────────────────────
 Save Last to Desktop                (title shows folder name, e.g. "Save Last to Screenshots")
 Save Last to Folder…
@@ -125,8 +125,8 @@ NSImages resized to 64 px height.
 | Key | Type | Default |
 |---|---|---|
 | `defaultFolder` | String (path) | `~/Desktop` |
-| `hotkeySelection` | `{keyCode:Int, modifiers:UInt}` | keyCode 21 (`4`), ⌥⇧⌘ |
-| `hotkeyFullScreen` | same | keyCode 20 (`3`), ⌥⇧⌘ |
+| `hotkeySelection` | `{keyCode:Int, modifiers:UInt}` | keyCode 21 (`4`), ⌃⌘ |
+| `hotkeyFullScreen` | same | keyCode 20 (`3`), ⌃⌘ |
 | `launchAtLogin` | Bool | false (uses `SMAppService.mainApp`) |
 
 If `defaultFolder` no longer exists at save time, fall back to `~/Desktop`

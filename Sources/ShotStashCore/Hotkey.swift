@@ -16,10 +16,10 @@ public struct Hotkey: Codable, Equatable {
     public static let option: UInt32 = 1 << 11
     public static let control: UInt32 = 1 << 12
 
-    /// ⌥⇧⌘4
-    public static let defaultSelection = Hotkey(keyCode: 21, modifiers: option | shift | cmd)
-    /// ⌥⇧⌘3
-    public static let defaultFullScreen = Hotkey(keyCode: 20, modifiers: option | shift | cmd)
+    /// ⌃⌘4
+    public static let defaultSelection = Hotkey(keyCode: 21, modifiers: control | cmd)
+    /// ⌃⌘3
+    public static let defaultFullScreen = Hotkey(keyCode: 20, modifiers: control | cmd)
 
     public var hasCommand: Bool { modifiers & Self.cmd != 0 }
     public var hasShift: Bool { modifiers & Self.shift != 0 }
