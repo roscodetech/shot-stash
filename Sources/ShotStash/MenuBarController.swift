@@ -22,6 +22,7 @@ final class MenuBarController: NSObject {
     var onResetDefaultFolder: (() -> Void)?
     var launchAtLoginEnabled: () -> Bool = { false }
     var onToggleLaunchAtLogin: (() -> Void)?
+    var onShowShortcuts: (() -> Void)?
     var onQuit: (() -> Void)?
 
     /// Set to false by AppDelegate when Carbon refused a hotkey; the menu shows "(unavailable)".
@@ -74,6 +75,7 @@ final class MenuBarController: NSObject {
         let login = item("Launch at Login") { [weak self] in self?.onToggleLaunchAtLogin?() }
         login.state = launchAtLoginEnabled() ? .on : .off
         menu.addItem(login)
+        menu.addItem(item("Keyboard Shortcuts…", key: "?", modifiers: [.command]) { [weak self] in self?.onShowShortcuts?() })
         menu.addItem(.separator())
 
         menu.addItem(item("Quit ShotStash", key: "q") { [weak self] in self?.onQuit?() })

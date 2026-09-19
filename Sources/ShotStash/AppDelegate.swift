@@ -12,6 +12,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var menuBar: MenuBarController!
     private var watcher: ClipboardWatcher!
     private var historyPanel: HistoryPanel!
+    private lazy var shortcutsWindow = ShortcutsWindow(settings: settings)
 
     override init() {
         let caches = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
@@ -79,6 +80,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             store.moveToTop(item)
         }
         historyPanel.onClear = { [weak self] in self?.store.clear() }
+        historyPanel.onShowShortcuts = { [weak self] in self?.showShortcuts() }
+        menuBar.onShowShortcuts = { [weak self] in self?.showShortcuts() }
         historyPanel.onPreview = { [weak self] item in self?.preview(item) }
         historyPanel.onSaveToDefault = { [weak self] item in
             guard let self else { return }
@@ -139,6 +142,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         notifications.updateSaveTitle(settings.defaultFolderName)
         menuBar.rebuild()
         return settings.defaultFolder
+    }
+
+    func showShortcuts() {
+        historyPanel.dismiss()
+        shortcutsWindow.show()
     }
 
     /// Opens an image in the default viewer (Preview). Text items are ignored.

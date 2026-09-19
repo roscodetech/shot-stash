@@ -44,6 +44,7 @@ Change them by writing Carbon key codes and modifier bits to UserDefaults, e.g. 
 - Recent Clipboard: last 10 items with thumbnails; each has Copy, Delete, and for images Save / Save As… / Save to Folder…
 - Default Folder: shows the current one, Change…, Reset to Desktop
 - Launch at Login
+- Keyboard Shortcuts… (also the ⓘ button in the panel header): a cheat sheet of every shortcut
 - Quit
 
 Items live in `~/Library/Caches/com.roscodetech.shotstash/` and are wiped on quit and launch.

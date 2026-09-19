@@ -12,6 +12,7 @@ final class HistoryPanel: NSPanel, NSTableViewDataSource, NSTableViewDelegate {
     private var isDismissing = false
     var onPick: ((ClipItem) -> Void)?
     var onClear: (() -> Void)?
+    var onShowShortcuts: (() -> Void)?
     var onPreview: ((ClipItem) -> Void)?
     var onSaveToDefault: ((ClipItem) -> Void)?
     var onSaveToFolder: ((ClipItem) -> Void)?
@@ -71,7 +72,13 @@ final class HistoryPanel: NSPanel, NSTableViewDataSource, NSTableViewDelegate {
         clear.bezelStyle = .inline
         clear.controlSize = .small
         clear.font = .systemFont(ofSize: 11)
-        let header = NSStackView(views: [title, NSView(), countLabel, clear])
+        let info = NSButton(image: NSImage(systemSymbolName: "info.circle", accessibilityDescription: "Shortcuts")!,
+                            target: self, action: #selector(infoTapped))
+        info.isBordered = false
+        info.bezelStyle = .inline
+        info.contentTintColor = .secondaryLabelColor
+        info.toolTip = "Keyboard shortcuts"
+        let header = NSStackView(views: [title, info, NSView(), countLabel, clear])
         header.orientation = .horizontal
         header.spacing = 8
         header.edgeInsets = NSEdgeInsets(top: 0, left: 14, bottom: 0, right: 10)
@@ -206,6 +213,10 @@ final class HistoryPanel: NSPanel, NSTableViewDataSource, NSTableViewDelegate {
     }
 
     // MARK: - Actions
+
+    @objc private func infoTapped() {
+        onShowShortcuts?()
+    }
 
     @objc private func clearTapped() {
         onClear?()
