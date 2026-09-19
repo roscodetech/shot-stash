@@ -72,6 +72,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             ClipboardService.copy(item)
             store.moveToTop(item)
         }
+        historyPanel.onClear = { [weak self] in self?.store.clear() }
 
         watcher = ClipboardWatcher(store: store)
         watcher.start()
