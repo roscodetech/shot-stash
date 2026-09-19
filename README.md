@@ -56,6 +56,10 @@ Saved files use Apple's naming: `Screenshot 2026-09-19 at 14.52.03.png`, with ` 
 
 Requires Xcode command line tools (Swift 5.9+). Other targets: `make test`, `make bundle`, `make run`, `make clean`.
 
+From a terminal:
+
+    /Applications/ShotStash.app/Contents/MacOS/ShotStash --launch-at-login on    # or off / status
+
 ## Permissions
 
 - **Screen & System Audio Recording**: macOS asks on the first capture. Grant it for ShotStash
