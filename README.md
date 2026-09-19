@@ -25,8 +25,9 @@ Everything you copy, in any app, lands in the history: images are stashed as PNG
 is kept in memory. ⌃⌘V opens a floating panel at the mouse pointer listing the last 10 items
 with thumbnails. ↑/↓ or hover to move, ⏎ or click to pick, Esc to close. Picking puts the item
 back on the clipboard; then press ⌘V in your app as normal. Image rows also have an eye button
-(open in Preview) and a save button (save to the default folder). Space opens in Preview,
-⌘S saves to the default folder, ⇧⌘S asks for a folder, ⌫ deletes. Right-click any row for the
+(open in Preview), a save button (save to the default folder) and a Save As… button (choose
+folder and filename). Space opens in Preview, ⌘S saves to the default folder, ⇧⌘S is Save As…,
+⌫ deletes. Right-click any row for the
 same actions. Each save is confirmed with a notification naming the file. Duplicates of the newest item, empty text,
 and anything a password manager marks confidential are skipped.
 
@@ -39,8 +40,8 @@ Change them by writing Carbon key codes and modifier bits to UserDefaults, e.g. 
 ## Menu
 
 - Capture Selection / Capture Full Screen / Show Clipboard History
-- Save Last Image to <folder> / Save Last Image to Folder… (the chosen folder becomes the new default)
-- Recent Clipboard: last 10 items with thumbnails; each has Copy, Delete, and for images Save / Save to Folder…
+- Save Last Image to <folder> / Save Last Image As… / Save Last Image to Folder… (a chosen folder becomes the new default)
+- Recent Clipboard: last 10 items with thumbnails; each has Copy, Delete, and for images Save / Save As… / Save to Folder…
 - Default Folder: shows the current one, Change…, Reset to Desktop
 - Launch at Login
 - Quit

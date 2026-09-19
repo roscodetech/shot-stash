@@ -11,9 +11,11 @@ final class MenuBarController: NSObject {
     var onShowHistory: (() -> Void)?
     var onSaveLastToDefault: (() -> Void)?
     var onSaveLastToFolder: (() -> Void)?
+    var onSaveLastAs: (() -> Void)?
     var onCopy: ((ClipItem) -> Void)?
     var onSaveToDefault: ((ClipItem) -> Void)?
     var onSaveToFolder: ((ClipItem) -> Void)?
+    var onSaveAs: ((ClipItem) -> Void)?
     var onDelete: ((ClipItem) -> Void)?
     var onClearAll: (() -> Void)?
     var onChangeDefaultFolder: (() -> Void)?
@@ -59,6 +61,9 @@ final class MenuBarController: NSObject {
         menu.addItem(item("Save Last Image to \(settings.defaultFolderName)", enabled: hasImage) { [weak self] in
             self?.onSaveLastToDefault?()
         })
+        menu.addItem(item("Save Last Image As…", enabled: hasImage) { [weak self] in
+            self?.onSaveLastAs?()
+        })
         menu.addItem(item("Save Last Image to Folder…", enabled: hasImage) { [weak self] in
             self?.onSaveLastToFolder?()
         })
@@ -93,6 +98,7 @@ final class MenuBarController: NSObject {
             actions.addItem(item("Copy to Clipboard") { [weak self] in self?.onCopy?(clip) })
             if clip.isImage {
                 actions.addItem(item("Save to \(settings.defaultFolderName)") { [weak self] in self?.onSaveToDefault?(clip) })
+                actions.addItem(item("Save As…") { [weak self] in self?.onSaveAs?(clip) })
                 actions.addItem(item("Save to Folder…") { [weak self] in self?.onSaveToFolder?(clip) })
             }
             actions.addItem(.separator())

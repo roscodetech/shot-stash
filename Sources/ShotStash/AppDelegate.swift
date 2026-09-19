@@ -1,4 +1,5 @@
 import AppKit
+import UniformTypeIdentifiers
 import ServiceManagement
 import ShotStashCore
 
@@ -39,6 +40,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             save(capture, to: resolvedDefaultFolder())
         }
         menuBar.onSaveToFolder = { [weak self] capture in self?.saveToChosenFolder(capture) }
+        menuBar.onSaveAs = { [weak self] capture in self?.saveAs(capture) }
+        menuBar.onSaveLastAs = { [weak self] in
+            guard let self, let latest = store.latestImage else { return }
+            saveAs(latest)
+        }
         menuBar.onDelete = { [weak self] capture in self?.store.remove(capture) }
         menuBar.onClearAll = { [weak self] in self?.store.clear() }
         menuBar.onChangeDefaultFolder = { [weak self] in
@@ -79,6 +85,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             save(item, to: resolvedDefaultFolder())
         }
         historyPanel.onSaveToFolder = { [weak self] item in self?.saveToChosenFolder(item) }
+        historyPanel.onSaveAs = { [weak self] item in self?.saveAs(item) }
         historyPanel.onDelete = { [weak self] item in self?.store.remove(item) }
         historyPanel.defaultFolderName = { [weak self] in self?.settings.defaultFolderName ?? "Desktop" }
 
@@ -145,13 +152,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             let saved = try Saver.save(capture, to: folder)
             notifications.notifySaved(saved)
         } catch {
-            let alert = NSAlert()
-            alert.alertStyle = .warning
-            alert.messageText = "Couldn't save screenshot"
-            alert.informativeText = "Destination: \(folder.path)\n\n\(error.localizedDescription)"
-            NSApp.activate(ignoringOtherApps: true)
-            alert.runModal()
+            showSaveError(error, destination: folder.path)
         }
+    }
+
+    private func showSaveError(_ error: Error, destination: String) {
+        let alert = NSAlert()
+        alert.alertStyle = .warning
+        alert.messageText = "Couldn't save screenshot"
+        alert.informativeText = "Destination: \(destination)\n\n\(error.localizedDescription)"
+        NSApp.activate(ignoringOtherApps: true)
+        alert.runModal()
     }
 
     // MARK: - Folder picker
@@ -168,6 +179,31 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         panel.directoryURL = resolvedDefaultFolder()
         NSApp.activate(ignoringOtherApps: true)
         return panel.runModal() == .OK ? panel.url : nil
+    }
+
+    /// "Save As…": standard save sheet with the Apple-style name prefilled. The chosen folder becomes the default.
+    func saveAs(_ item: ClipItem) {
+        guard let source = item.fileURL else { return }
+        let panel = NSSavePanel()
+        panel.allowedContentTypes = [.png]
+        panel.canCreateDirectories = true
+        panel.isExtensionHidden = false
+        panel.nameFieldStringValue = SaveNamer.baseName(for: item.createdAt) + ".png"
+        panel.directoryURL = resolvedDefaultFolder()
+        panel.message = "Save screenshot as"
+        NSApp.activate(ignoringOtherApps: true)
+        guard panel.runModal() == .OK, let destination = panel.url else { return }
+        do {
+            let fm = FileManager.default
+            if fm.fileExists(atPath: destination.path) { try fm.removeItem(at: destination) }
+            try fm.copyItem(at: source, to: destination)
+            settings.defaultFolder = destination.deletingLastPathComponent()
+            notifications.updateSaveTitle(settings.defaultFolderName)
+            menuBar.rebuild()
+            notifications.notifySaved(destination)
+        } catch {
+            showSaveError(error, destination: destination.path)
+        }
     }
 
     /// "Save Last to Folder…": picks a folder, saves there, and remembers it as the new default.
