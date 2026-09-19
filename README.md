@@ -23,8 +23,11 @@ to the Desktop or any folder you choose.
 
 Everything you copy, in any app, lands in the history: images are stashed as PNG files, text
 is kept in memory. ⌃⌘V opens a floating panel at the mouse pointer listing the last 10 items
-with thumbnails. ↑/↓ to move, ⏎ or click to pick, Esc to close. Picking puts the item back on
-the clipboard; then press ⌘V in your app as normal. Duplicates of the newest item, empty text,
+with thumbnails. ↑/↓ or hover to move, ⏎ or click to pick, Esc to close. Picking puts the item
+back on the clipboard; then press ⌘V in your app as normal. Image rows also have an eye button
+(open in Preview) and a save button (save to the default folder). Space opens in Preview,
+⌘S saves to the default folder, ⇧⌘S asks for a folder, ⌫ deletes. Right-click any row for the
+same actions. Each save is confirmed with a notification naming the file. Duplicates of the newest item, empty text,
 and anything a password manager marks confidential are skipped.
 
 Change them by writing Carbon key codes and modifier bits to UserDefaults, e.g. ⌥⇧⌘4:

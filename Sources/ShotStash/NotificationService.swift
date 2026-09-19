@@ -43,6 +43,18 @@ final class NotificationService: NSObject, UNUserNotificationCenterDelegate {
         }
     }
 
+    /// Confirms a save; no action button.
+    func notifySaved(_ url: URL) {
+        guard available else { return }
+        let content = UNMutableNotificationContent()
+        content.title = "Saved to \(url.deletingLastPathComponent().lastPathComponent)"
+        content.body = url.lastPathComponent
+        let request = UNNotificationRequest(identifier: "saved-\(UUID().uuidString)", content: content, trigger: nil)
+        UNUserNotificationCenter.current().add(request) { error in
+            if let error { NSLog("ShotStash: notification failed: \(error)") }
+        }
+    }
+
     // MARK: - UNUserNotificationCenterDelegate
 
     func userNotificationCenter(_ center: UNUserNotificationCenter,

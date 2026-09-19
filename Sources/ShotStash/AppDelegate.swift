@@ -73,6 +73,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             store.moveToTop(item)
         }
         historyPanel.onClear = { [weak self] in self?.store.clear() }
+        historyPanel.onPreview = { [weak self] item in self?.preview(item) }
+        historyPanel.onSaveToDefault = { [weak self] item in
+            guard let self else { return }
+            save(item, to: resolvedDefaultFolder())
+        }
+        historyPanel.onSaveToFolder = { [weak self] item in self?.saveToChosenFolder(item) }
+        historyPanel.onDelete = { [weak self] item in self?.store.remove(item) }
+        historyPanel.defaultFolderName = { [weak self] in self?.settings.defaultFolderName ?? "Desktop" }
 
         watcher = ClipboardWatcher(store: store)
         watcher.start()
@@ -126,9 +134,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         return settings.defaultFolder
     }
 
+    /// Opens an image in the default viewer (Preview). Text items are ignored.
+    func preview(_ item: ClipItem) {
+        guard let url = item.fileURL else { return }
+        NSWorkspace.shared.open(url)
+    }
+
     func save(_ capture: ClipItem, to folder: URL) {
         do {
-            try Saver.save(capture, to: folder)
+            let saved = try Saver.save(capture, to: folder)
+            notifications.notifySaved(saved)
         } catch {
             let alert = NSAlert()
             alert.alertStyle = .warning

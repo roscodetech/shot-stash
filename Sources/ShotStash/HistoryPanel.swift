@@ -12,6 +12,12 @@ final class HistoryPanel: NSPanel, NSTableViewDataSource, NSTableViewDelegate {
     private var isDismissing = false
     var onPick: ((ClipItem) -> Void)?
     var onClear: (() -> Void)?
+    var onPreview: ((ClipItem) -> Void)?
+    var onSaveToDefault: ((ClipItem) -> Void)?
+    var onSaveToFolder: ((ClipItem) -> Void)?
+    var onDelete: ((ClipItem) -> Void)?
+    /// Name of the default save folder, for menu titles.
+    var defaultFolderName: () -> String = { "Desktop" }
 
     private static let rowHeight: CGFloat = 66
     private static let width: CGFloat = 380
@@ -95,7 +101,7 @@ final class HistoryPanel: NSPanel, NSTableViewDataSource, NSTableViewDelegate {
         emptyLabel.font = .systemFont(ofSize: 13)
 
         // Footer
-        let hint = NSTextField(labelWithString: "↑↓ move   ⏎ copy   esc close")
+        let hint = NSTextField(labelWithString: "↑↓ move   ⏎ copy   space preview   ⌘S save   ⌫ delete   esc close")
         hint.font = .systemFont(ofSize: 10.5)
         hint.textColor = .tertiaryLabelColor
         hint.alignment = .center
@@ -206,13 +212,53 @@ final class HistoryPanel: NSPanel, NSTableViewDataSource, NSTableViewDelegate {
     }
 
     override func keyDown(with event: NSEvent) {
+        let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+        if flags.contains(.command), event.charactersIgnoringModifiers?.lowercased() == "s" {
+            guard let item = selectedItem else { return }
+            if flags.contains(.shift) { onSaveToFolder?(item) } else { onSaveToDefault?(item) }
+            return
+        }
         switch event.keyCode {
         case 53: dismiss()                                // Esc
         case 36, 76: pickSelected()                       // Return, keypad Enter
         case 125: move(by: 1)                             // ↓
         case 126: move(by: -1)                            // ↑
+        case 49: if let item = selectedItem { onPreview?(item) }          // Space
+        case 51, 117: if let item = selectedItem { onDelete?(item) }      // ⌫, forward delete
         default: super.keyDown(with: event)
         }
+    }
+
+    private var selectedItem: ClipItem? {
+        let row = tableView.selectedRow
+        guard row >= 0, row < store.items.count else { return nil }
+        return store.items[row]
+    }
+
+    /// Right-click menu for a row.
+    private func contextMenu(for item: ClipItem) -> NSMenu {
+        let menu = NSMenu()
+        menu.autoenablesItems = false
+        func add(_ title: String, _ action: @escaping () -> Void) {
+            let entry = NSMenuItem(title: title, action: #selector(runMenuAction(_:)), keyEquivalent: "")
+            entry.target = self
+            entry.representedObject = ActionBox(action)
+            menu.addItem(entry)
+        }
+        add("Copy to Clipboard") { [weak self] in self?.dismiss(); self?.onPick?(item) }
+        if item.isImage {
+            add("Open in Preview") { [weak self] in self?.onPreview?(item) }
+            menu.addItem(.separator())
+            add("Save to \(defaultFolderName())") { [weak self] in self?.onSaveToDefault?(item) }
+            add("Save to Folder…") { [weak self] in self?.onSaveToFolder?(item) }
+        }
+        menu.addItem(.separator())
+        add("Delete") { [weak self] in self?.onDelete?(item) }
+        return menu
+    }
+
+    @objc private func runMenuAction(_ sender: NSMenuItem) {
+        (sender.representedObject as? ActionBox)?.action()
     }
 
     private func move(by delta: Int) {
@@ -244,12 +290,16 @@ final class HistoryPanel: NSPanel, NSTableViewDataSource, NSTableViewDelegate {
     }
 
     func tableView(_ tableView: NSTableView, viewFor tableColumn: NSTableColumn?, row: Int) -> NSView? {
+        let item = store.items[row]
         let cell = ClipRowView()
-        cell.configure(with: store.items[row])
+        cell.configure(with: item)
         cell.onHover = { [weak self, weak tableView] in
             guard let tableView, tableView.selectedRow != row, row < (self?.store.items.count ?? 0) else { return }
             tableView.selectRowIndexes([row], byExtendingSelection: false)
         }
+        cell.onPreview = { [weak self] in self?.onPreview?(item) }
+        cell.onSave = { [weak self] in self?.onSaveToDefault?(item) }
+        cell.contextMenu = { [weak self] in self?.contextMenu(for: item) }
         return cell
     }
 }
@@ -271,8 +321,13 @@ final class ClipRowView: NSView {
     private let badge = NSTextField(labelWithString: "")
     private let titleLabel = NSTextField(wrappingLabelWithString: "")
     private let timeLabel = NSTextField(labelWithString: "")
+    private let previewButton = NSButton()
+    private let saveButton = NSButton()
     private var tracking: NSTrackingArea?
     var onHover: (() -> Void)?
+    var onPreview: (() -> Void)?
+    var onSave: (() -> Void)?
+    var contextMenu: (() -> NSMenu?)?
 
     private static let relative: RelativeDateTimeFormatter = {
         let f = RelativeDateTimeFormatter()
@@ -307,12 +362,24 @@ final class ClipRowView: NSView {
         timeLabel.font = .monospacedDigitSystemFont(ofSize: 10.5, weight: .regular)
         timeLabel.textColor = .tertiaryLabelColor
 
-        for view in [imageView, badge, titleLabel, timeLabel] {
+        configureIconButton(previewButton, symbol: "eye", tooltip: "Open in Preview (Space)", action: #selector(previewTapped))
+        configureIconButton(saveButton, symbol: "square.and.arrow.down", tooltip: "Save to default folder (⌘S)", action: #selector(saveTapped))
+
+        for view in [imageView, badge, titleLabel, timeLabel, previewButton, saveButton] {
             view.translatesAutoresizingMaskIntoConstraints = false
             addSubview(view)
         }
         let leadingCol = imageView.trailingAnchor
         NSLayoutConstraint.activate([
+            saveButton.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -10),
+            saveButton.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -8),
+            saveButton.widthAnchor.constraint(equalToConstant: 22),
+            saveButton.heightAnchor.constraint(equalToConstant: 20),
+            previewButton.trailingAnchor.constraint(equalTo: saveButton.leadingAnchor, constant: -4),
+            previewButton.centerYAnchor.constraint(equalTo: saveButton.centerYAnchor),
+            previewButton.widthAnchor.constraint(equalToConstant: 22),
+            previewButton.heightAnchor.constraint(equalToConstant: 20),
+
             imageView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 10),
             imageView.centerYAnchor.constraint(equalTo: centerYAnchor),
             imageView.widthAnchor.constraint(equalToConstant: 72),
@@ -336,6 +403,24 @@ final class ClipRowView: NSView {
     }
 
     required init?(coder: NSCoder) { fatalError("init(coder:) is not supported") }
+
+    private func configureIconButton(_ button: NSButton, symbol: String, tooltip: String, action: Selector) {
+        button.image = NSImage(systemSymbolName: symbol, accessibilityDescription: tooltip)
+        button.imagePosition = .imageOnly
+        button.isBordered = false
+        button.bezelStyle = .inline
+        button.contentTintColor = .secondaryLabelColor
+        button.toolTip = tooltip
+        button.target = self
+        button.action = action
+    }
+
+    @objc private func previewTapped() { onPreview?() }
+    @objc private func saveTapped() { onSave?() }
+
+    override func menu(for event: NSEvent) -> NSMenu? {
+        contextMenu?() ?? super.menu(for: event)
+    }
 
     override func updateTrackingAreas() {
         super.updateTrackingAreas()
@@ -362,6 +447,8 @@ final class ClipRowView: NSView {
             titleLabel.stringValue = "Screenshot or copied image"
             titleLabel.textColor = .secondaryLabelColor
             titleLabel.font = .systemFont(ofSize: 12)
+            previewButton.isHidden = false
+            saveButton.isHidden = false
         case let .text(text):
             imageView.image = NSImage(systemSymbolName: Self.looksLikeCode(text) ? "chevron.left.forwardslash.chevron.right" : "text.alignleft",
                                       accessibilityDescription: "Text")
@@ -376,6 +463,8 @@ final class ClipRowView: NSView {
             titleLabel.font = Self.looksLikeCode(text)
                 ? .monospacedSystemFont(ofSize: 11, weight: .regular)
                 : .systemFont(ofSize: 12.5)
+            previewButton.isHidden = true
+            saveButton.isHidden = true
         }
     }
 
