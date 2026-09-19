@@ -1,8 +1,9 @@
 # ShotStash
 
-Menu-bar screenshot stash for macOS. One hotkey grabs a selection (or the full screen)
-straight to the clipboard and into a temporary stash. Nothing is written to the Desktop
-until you ask.
+Menu-bar screenshot stash and clipboard history for macOS. One hotkey grabs a selection
+(or the full screen) straight to the clipboard and into a temporary stash. Another shows
+the last 10 things you copied, images and text alike, so you can see what you're about to
+paste. Nothing is written to the Desktop until you ask.
 
 ## Why
 
@@ -16,6 +17,15 @@ to the Desktop or any folder you choose.
 |---|---|
 | Capture selection (Space toggles window mode, Esc cancels) | ⌃⌘4 |
 | Capture full screen | ⌃⌘3 |
+| Show clipboard history panel | ⌃⌘V |
+
+## Clipboard history
+
+Everything you copy, in any app, lands in the history: images are stashed as PNG files, text
+is kept in memory. ⌃⌘V opens a floating panel at the mouse pointer listing the last 10 items
+with thumbnails. ↑/↓ to move, ⏎ or click to pick, Esc to close. Picking puts the item back on
+the clipboard; then press ⌘V in your app as normal. Duplicates of the newest item, empty text,
+and anything a password manager marks confidential are skipped.
 
 Change them by writing Carbon key codes and modifier bits to UserDefaults, e.g. ⌥⇧⌘4:
 
@@ -25,14 +35,14 @@ Change them by writing Carbon key codes and modifier bits to UserDefaults, e.g. 
 
 ## Menu
 
-- Capture Selection / Capture Full Screen
-- Save Last to <folder> / Save Last to Folder… (the chosen folder becomes the new default)
-- Recent Captures: last 10 with thumbnails; each has Copy, Save, Save to Folder…, Delete
+- Capture Selection / Capture Full Screen / Show Clipboard History
+- Save Last Image to <folder> / Save Last Image to Folder… (the chosen folder becomes the new default)
+- Recent Clipboard: last 10 items with thumbnails; each has Copy, Delete, and for images Save / Save to Folder…
 - Default Folder: shows the current one, Change…, Reset to Desktop
 - Launch at Login
 - Quit
 
-Captures live in `~/Library/Caches/com.roscodetech.shotstash/` and are wiped on quit and launch.
+Items live in `~/Library/Caches/com.roscodetech.shotstash/` and are wiped on quit and launch.
 Saved files use Apple's naming: `Screenshot 2026-09-19 at 14.52.03.png`, with ` (2)` etc. on collision.
 
 ## Install
@@ -61,7 +71,9 @@ macOS asks again after every `make install`.
 5. Save Last to Folder… → pick Downloads → menu titles switch to Downloads.
 6. Recent Captures shows thumbnails newest first; Delete and Clear All work.
 7. Notification banner appears; its Save button writes the file.
-8. Quit: caches folder is empty.
+8. Copy text in another app, then ⌃⌘V: the panel lists it; ⏎ closes the panel and ⌘V pastes it.
+9. Copy an image in a browser: it appears in the panel with a thumbnail; a screenshot appears once, not twice.
+10. Quit: caches folder is empty.
 
 ## Development
 

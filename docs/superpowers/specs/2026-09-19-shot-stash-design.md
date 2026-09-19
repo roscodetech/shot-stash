@@ -170,3 +170,27 @@ make clean
   file, paste works in Preview/Claude Code, Save Last to Desktop produces
   correctly named file, folder picker remembers choice, notification
   action saves, quit clears cache folder.
+
+---
+
+# Addendum 2026-09-19: clipboard history
+
+Approved in chat. The stash generalizes from "recent screenshots" to "recent clipboard items".
+
+## Decisions
+
+| Decision | Choice |
+|---|---|
+| Item kinds | image (PNG file in the cache folder + pixel size) and text |
+| Depth | 10, newest first; session only (wiped on quit and launch) |
+| Pick action | put the item on the clipboard and close; user presses ⌘V (no Accessibility permission) |
+| Panel hotkey | ⌃⌘V, configurable like the others (`hotkeyHistory` in UserDefaults) |
+| Skipped content | empty/whitespace-only text; pasteboards flagged `org.nspasteboard.ConcealedType` or `org.nspasteboard.TransientType`; exact duplicate of the newest item; writes made by ShotStash itself |
+
+## Changes
+
+- `Capture`/`CaptureStore` → `ClipItem`/`ClipStore`. `ClipItem.content` is `.image(fileURL:width:height:)` or `.text(String)`. Store gains `addImage`, `addText` (returns nil on duplicate and deletes nothing), `latestImage`, `moveToTop`.
+- New `ClipboardWatcher` (app layer): polls `NSPasteboard.general.changeCount` every 0.5 s on the main run loop; ignores the change count `ClipboardService` last wrote.
+- New `HistoryPanel` (app layer): non-activating floating `NSPanel` at the mouse location, 360 pt wide, one row per item (64 pt thumbnail or two lines of text, plus HH:mm:ss). ↑/↓ move, ⏎ or click selects, Esc or losing key status closes. Selecting calls `ClipboardService.copy(item)` and `store.moveToTop(item)`.
+- Menu: "Show Clipboard History ⌃⌘V" under the capture items; "Save Last Image to <folder>" / "Save Last Image to Folder…" (enabled when any image exists); "Recent Clipboard" submenu lists all items, save actions only on images.
+- Screenshot flow unchanged; the notification is still only for captures.

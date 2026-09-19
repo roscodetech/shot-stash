@@ -34,6 +34,8 @@ final class SettingsTests: XCTestCase {
         let settings = Settings(defaults: defaults)
         XCTAssertEqual(settings.hotkeySelection, .defaultSelection)
         XCTAssertEqual(settings.hotkeyFullScreen, .defaultFullScreen)
+        XCTAssertEqual(settings.hotkeyHistory, .defaultHistory)
+        XCTAssertEqual(Hotkey.defaultHistory.displayString, "⌃⌘V")
         let custom = Hotkey(keyCode: 23, modifiers: Hotkey.control | Hotkey.option)
         settings.hotkeySelection = custom
         XCTAssertEqual(Settings(defaults: defaults).hotkeySelection, custom)

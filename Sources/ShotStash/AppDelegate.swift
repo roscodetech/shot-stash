@@ -4,17 +4,19 @@ import ShotStashCore
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
     let settings = Settings(defaults: UserDefaults(suiteName: Settings.suiteName) ?? .standard)
-    let store: CaptureStore
+    let store: ClipStore
     private let captureService = CaptureService()
     private let hotkeys = HotkeyManager()
     private let notifications = NotificationService()
     private var menuBar: MenuBarController!
+    private var watcher: ClipboardWatcher!
+    private var historyPanel: HistoryPanel!
 
     override init() {
         let caches = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
         let dir = caches.appendingPathComponent(Settings.suiteName, isDirectory: true)
         // A stash directory we cannot create means nothing works; fail loudly.
-        store = try! CaptureStore(directory: dir)
+        store = try! ClipStore(directory: dir)
         super.init()
     }
 
@@ -24,10 +26,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         menuBar = MenuBarController(settings: settings, store: store)
         menuBar.onCaptureSelection = { [weak self] in self?.capture(mode: .selection) }
         menuBar.onCaptureFullScreen = { [weak self] in self?.capture(mode: .fullScreen) }
+        menuBar.onShowHistory = { [weak self] in self?.historyPanel.toggle() }
         menuBar.onSaveLastToDefault = { [weak self] in self?.saveLast() }
         menuBar.onQuit = { NSApp.terminate(nil) }
         menuBar.onSaveLastToFolder = { [weak self] in
-            guard let self, let latest = store.latest else { return }
+            guard let self, let latest = store.latestImage else { return }
             saveToChosenFolder(latest)
         }
         menuBar.onCopy = { capture in ClipboardService.copy(capture) }
@@ -59,18 +62,35 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         menuBar.fullScreenHotkeyAvailable = hotkeys.register(settings.hotkeyFullScreen) { [weak self] in
             self?.capture(mode: .fullScreen)
         }
+        menuBar.historyHotkeyAvailable = hotkeys.register(settings.hotkeyHistory) { [weak self] in
+            self?.historyPanel.toggle()
+        }
+
+        historyPanel = HistoryPanel(store: store)
+        historyPanel.onPick = { [weak self] item in
+            guard let self else { return }
+            ClipboardService.copy(item)
+            store.moveToTop(item)
+        }
+
+        watcher = ClipboardWatcher(store: store)
+        watcher.start()
 
         notifications.setup(saveTitle: settings.defaultFolderName)
         notifications.onSaveRequested = { [weak self] id in
-            guard let self, let capture = store.capture(id: id) else { return }
+            guard let self, let capture = store.item(id: id) else { return }
             save(capture, to: resolvedDefaultFolder())
         }
 
-        store.onChange = { [weak self] in self?.menuBar.rebuild() }
+        store.onChange = { [weak self] in
+            self?.menuBar.rebuild()
+            if self?.historyPanel?.isVisible == true { self?.historyPanel.reload() }
+        }
         menuBar.rebuild()
     }
 
     func applicationWillTerminate(_ notification: Notification) {
+        watcher?.stop()
         store.clear()
     }
 
@@ -81,14 +101,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         captureService.capture(mode: mode, to: url) { [weak self] produced in
             guard let self, produced else { return }
             let size = CaptureService.pixelSize(of: url)
-            let capture = store.add(fileURL: url, width: size.width, height: size.height)
+            guard let capture = store.addImage(fileURL: url, width: size.width, height: size.height) else { return }
             ClipboardService.copy(capture)
             notifications.notify(capture)
         }
     }
 
     func saveLast() {
-        guard let latest = store.latest else { return }
+        guard let latest = store.latestImage else { return }
         save(latest, to: resolvedDefaultFolder())
     }
 
@@ -105,7 +125,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         return settings.defaultFolder
     }
 
-    func save(_ capture: Capture, to folder: URL) {
+    func save(_ capture: ClipItem, to folder: URL) {
         do {
             try Saver.save(capture, to: folder)
         } catch {
@@ -135,7 +155,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     /// "Save Last to Folder…": picks a folder, saves there, and remembers it as the new default.
-    func saveToChosenFolder(_ capture: Capture) {
+    func saveToChosenFolder(_ capture: ClipItem) {
         guard let folder = chooseFolder() else { return }
         settings.defaultFolder = folder
         notifications.updateSaveTitle(settings.defaultFolderName)

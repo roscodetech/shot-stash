@@ -30,11 +30,11 @@ final class NotificationService: NSObject, UNUserNotificationCenterDelegate {
         UNUserNotificationCenter.current().setNotificationCategories([category])
     }
 
-    func notify(_ capture: Capture) {
+    func notify(_ capture: ClipItem) {
         guard available else { return }
         let content = UNMutableNotificationContent()
         content.title = "Copied to clipboard"
-        content.body = capture.sizeLabel
+        content.body = capture.sizeLabel ?? ""
         content.categoryIdentifier = Self.category
         content.userInfo = [Self.captureKey: capture.id.uuidString]
         let request = UNNotificationRequest(identifier: capture.id.uuidString, content: content, trigger: nil)

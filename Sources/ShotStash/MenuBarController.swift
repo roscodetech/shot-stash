@@ -4,16 +4,17 @@ import ShotStashCore
 final class MenuBarController: NSObject {
     private let statusItem: NSStatusItem
     private let settings: Settings
-    private let store: CaptureStore
+    private let store: ClipStore
 
     var onCaptureSelection: (() -> Void)?
     var onCaptureFullScreen: (() -> Void)?
+    var onShowHistory: (() -> Void)?
     var onSaveLastToDefault: (() -> Void)?
     var onSaveLastToFolder: (() -> Void)?
-    var onCopy: ((Capture) -> Void)?
-    var onSaveToDefault: ((Capture) -> Void)?
-    var onSaveToFolder: ((Capture) -> Void)?
-    var onDelete: ((Capture) -> Void)?
+    var onCopy: ((ClipItem) -> Void)?
+    var onSaveToDefault: ((ClipItem) -> Void)?
+    var onSaveToFolder: ((ClipItem) -> Void)?
+    var onDelete: ((ClipItem) -> Void)?
     var onClearAll: (() -> Void)?
     var onChangeDefaultFolder: (() -> Void)?
     var onResetDefaultFolder: (() -> Void)?
@@ -24,6 +25,7 @@ final class MenuBarController: NSObject {
     /// Set to false by AppDelegate when Carbon refused a hotkey; the menu shows "(unavailable)".
     var selectionHotkeyAvailable = true
     var fullScreenHotkeyAvailable = true
+    var historyHotkeyAvailable = true
 
     private static let timeFormatter: DateFormatter = {
         let f = DateFormatter()
@@ -31,7 +33,7 @@ final class MenuBarController: NSObject {
         return f
     }()
 
-    init(settings: Settings, store: CaptureStore) {
+    init(settings: Settings, store: ClipStore) {
         self.settings = settings
         self.store = store
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
@@ -49,16 +51,18 @@ final class MenuBarController: NSObject {
                                 available: selectionHotkeyAvailable) { [weak self] in self?.onCaptureSelection?() })
         menu.addItem(hotkeyItem("Capture Full Screen", hotkey: settings.hotkeyFullScreen,
                                 available: fullScreenHotkeyAvailable) { [weak self] in self?.onCaptureFullScreen?() })
+        menu.addItem(hotkeyItem("Show Clipboard History", hotkey: settings.hotkeyHistory,
+                                available: historyHotkeyAvailable) { [weak self] in self?.onShowHistory?() })
         menu.addItem(.separator())
 
-        let hasCapture = store.latest != nil
-        menu.addItem(item("Save Last to \(settings.defaultFolderName)", enabled: hasCapture) { [weak self] in
+        let hasImage = store.latestImage != nil
+        menu.addItem(item("Save Last Image to \(settings.defaultFolderName)", enabled: hasImage) { [weak self] in
             self?.onSaveLastToDefault?()
         })
-        menu.addItem(item("Save Last to Folder…", enabled: hasCapture) { [weak self] in
+        menu.addItem(item("Save Last Image to Folder…", enabled: hasImage) { [weak self] in
             self?.onSaveLastToFolder?()
         })
-        menu.addItem(recentCapturesItem())
+        menu.addItem(recentClipboardItem())
         menu.addItem(.separator())
 
         menu.addItem(defaultFolderItem())
@@ -73,29 +77,31 @@ final class MenuBarController: NSObject {
 
     // MARK: - Builders
 
-    private func recentCapturesItem() -> NSMenuItem {
-        let parent = NSMenuItem(title: "Recent Captures", action: nil, keyEquivalent: "")
+    private func recentClipboardItem() -> NSMenuItem {
+        let parent = NSMenuItem(title: "Recent Clipboard", action: nil, keyEquivalent: "")
         let submenu = NSMenu()
         submenu.autoenablesItems = false
-        if store.captures.isEmpty {
-            submenu.addItem(item("No captures yet", enabled: false) {})
+        if store.items.isEmpty {
+            submenu.addItem(item("Nothing copied yet", enabled: false) {})
         }
-        for capture in store.captures {
-            let title = "\(Self.timeFormatter.string(from: capture.createdAt)) — \(capture.sizeLabel)"
+        for clip in store.items {
+            let title = "\(Self.timeFormatter.string(from: clip.createdAt)) — \(clip.preview)"
             let entry = NSMenuItem(title: title, action: nil, keyEquivalent: "")
-            entry.image = thumbnail(for: capture)
+            entry.image = thumbnail(for: clip)
             let actions = NSMenu()
             actions.autoenablesItems = false
-            actions.addItem(item("Copy to Clipboard") { [weak self] in self?.onCopy?(capture) })
-            actions.addItem(item("Save to \(settings.defaultFolderName)") { [weak self] in self?.onSaveToDefault?(capture) })
-            actions.addItem(item("Save to Folder…") { [weak self] in self?.onSaveToFolder?(capture) })
+            actions.addItem(item("Copy to Clipboard") { [weak self] in self?.onCopy?(clip) })
+            if clip.isImage {
+                actions.addItem(item("Save to \(settings.defaultFolderName)") { [weak self] in self?.onSaveToDefault?(clip) })
+                actions.addItem(item("Save to Folder…") { [weak self] in self?.onSaveToFolder?(clip) })
+            }
             actions.addItem(.separator())
-            actions.addItem(item("Delete") { [weak self] in self?.onDelete?(capture) })
+            actions.addItem(item("Delete") { [weak self] in self?.onDelete?(clip) })
             entry.submenu = actions
             submenu.addItem(entry)
         }
         submenu.addItem(.separator())
-        submenu.addItem(item("Clear All", enabled: !store.captures.isEmpty) { [weak self] in self?.onClearAll?() })
+        submenu.addItem(item("Clear All", enabled: !store.items.isEmpty) { [weak self] in self?.onClearAll?() })
         parent.submenu = submenu
         return parent
     }
@@ -113,9 +119,12 @@ final class MenuBarController: NSObject {
         return parent
     }
 
-    /// 64 px tall thumbnail; NSImage scales on draw, so we only adjust the logical size.
-    private func thumbnail(for capture: Capture) -> NSImage? {
-        guard let image = NSImage(contentsOf: capture.fileURL), image.size.height > 0 else { return nil }
+    /// 64 px tall thumbnail for images, a text glyph for text; NSImage scales on draw.
+    private func thumbnail(for clip: ClipItem) -> NSImage? {
+        guard let url = clip.fileURL else {
+            return NSImage(systemSymbolName: "text.alignleft", accessibilityDescription: "Text")
+        }
+        guard let image = NSImage(contentsOf: url), image.size.height > 0 else { return nil }
         let height: CGFloat = 64
         image.size = NSSize(width: image.size.width * height / image.size.height, height: height)
         return image

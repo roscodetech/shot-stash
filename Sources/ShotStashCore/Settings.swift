@@ -8,6 +8,7 @@ public final class Settings {
         static let defaultFolder = "defaultFolder"
         static let hotkeySelection = "hotkeySelection"
         static let hotkeyFullScreen = "hotkeyFullScreen"
+        static let hotkeyHistory = "hotkeyHistory"
     }
 
     private let defaults: UserDefaults
@@ -44,6 +45,11 @@ public final class Settings {
     public var hotkeyFullScreen: Hotkey {
         get { hotkey(forKey: Key.hotkeyFullScreen) ?? .defaultFullScreen }
         set { set(hotkey: newValue, forKey: Key.hotkeyFullScreen) }
+    }
+
+    public var hotkeyHistory: Hotkey {
+        get { hotkey(forKey: Key.hotkeyHistory) ?? .defaultHistory }
+        set { set(hotkey: newValue, forKey: Key.hotkeyHistory) }
     }
 
     private func hotkey(forKey key: String) -> Hotkey? {

@@ -1698,3 +1698,20 @@ git branch --list
 ```
 
 Expected: `dev`, `dev-stable`, `prod`, `prod-stable` all listed at the same commit.
+
+---
+
+# Addendum: clipboard history (spec addendum 2026-09-19)
+
+Executed inline in the same session as the original plan; code was written directly to the files listed and is the reference.
+
+### Task 9: ClipItem and ClipStore (core, tested)
+- Replace `Capture.swift`/`CaptureStore.swift` with `ClipItem.swift`/`ClipStore.swift`.
+- `ClipItem { id, createdAt, content: Content; isImage; fileURL; sizeLabel; preview }`, `ClipItem.preview(of:limit:)` collapses whitespace and truncates with "…".
+- `ClipStore { items, latest, latestImage, newFileURL(), addImage(...), addText(_:) -> ClipItem?, moveToTop(_:), item(id:), remove(_:), clear(), purgeDirectory() }`.
+- Tests: `ClipStoreTests` (mixed eviction, text dedup, image dedup deletes the new file, moveToTop, latestImage), `ClipItemTests` (preview).
+- `Settings.hotkeyHistory` default keyCode 9 (V) ⌃⌘; test added.
+
+### Task 10: watcher, panel, menu (app)
+- `ClipboardWatcher.swift`, `HistoryPanel.swift`; adapt `ClipboardService`, `Saver`, `MenuBarController`, `AppDelegate`.
+- Manual checks: copy text in any app → appears in Recent Clipboard; ⌃⌘V shows the panel; pick → ⌘V pastes; screenshots still appear once (no duplicate); Esc closes; Save actions only on images.

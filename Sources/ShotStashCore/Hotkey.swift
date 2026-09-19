@@ -20,6 +20,8 @@ public struct Hotkey: Codable, Equatable {
     public static let defaultSelection = Hotkey(keyCode: 21, modifiers: control | cmd)
     /// ⌃⌘3
     public static let defaultFullScreen = Hotkey(keyCode: 20, modifiers: control | cmd)
+    /// ⌃⌘V opens the clipboard history panel
+    public static let defaultHistory = Hotkey(keyCode: 9, modifiers: control | cmd)
 
     public var hasCommand: Bool { modifiers & Self.cmd != 0 }
     public var hasShift: Bool { modifiers & Self.shift != 0 }
